@@ -1,7 +1,7 @@
 -- Create the ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "OreFinderGUI"
-screenGui.Parent = game:GetService("CoreGui") -- Moves GUI to CoreGui to prevent interference
+screenGui.Parent = game:GetService("CoreGui")
 
 -- Create the scrolling frame to hold the clickable buttons (for multiple ores)
 local scrollingFrame = Instance.new("ScrollingFrame")
@@ -18,8 +18,32 @@ uiListLayout.FillDirection = Enum.FillDirection.Vertical
 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiListLayout.Padding = UDim.new(0, 5)
 
+-- Toggle Button for Auto Teleport
+local toggleButton = Instance.new("TextButton")
+toggleButton.Parent = screenGui
+toggleButton.Size = UDim2.new(0, 300, 0, 30)
+toggleButton.Position = UDim2.new(0.5, 500, 0.5, -140)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "Auto Teleport: OFF"
+
+toggleButton.AutoButtonColor = false
+local autoTeleportEnabled = false
+
+toggleButton.MouseButton1Click:Connect(function()
+    autoTeleportEnabled = not autoTeleportEnabled
+    if autoTeleportEnabled then
+        toggleButton.Text = "Auto Teleport: ON"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    else
+        toggleButton.Text = "Auto Teleport: OFF"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    end
+end)
+
 -- Function to update the ScrollingFrame with buttons for each ore model
 local function updateOresDisplay()
+    -- Clear existing buttons
     for _, child in pairs(scrollingFrame:GetChildren()) do
         if child:IsA("TextButton") then
             child:Destroy()
@@ -28,20 +52,28 @@ local function updateOresDisplay()
 
     local oresFolder = workspace:FindFirstChild("Ores")
     if oresFolder then
-        for _, item in pairs(oresFolder:GetChildren()) do
-            if item:IsA("Model") then
-                local oreButton = Instance.new("TextButton")
-                oreButton.Parent = scrollingFrame
-                oreButton.Size = UDim2.new(1, 0, 0, 30)
-                oreButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                oreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-                oreButton.TextSize = 16
-                oreButton.Text = item.Name
-                oreButton.TextWrapped = true
+        local ores = oresFolder:GetChildren()
+        if #ores == 0 then
+            -- If the ores folder is empty, trigger the RefreshRequest remote
+            game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RefreshRequest"):FireServer()
+        else
+            for _, item in pairs(ores) do
+                if item:IsA("Model") then
+                    local oreButton = Instance.new("TextButton")
+                    oreButton.Parent = scrollingFrame
+                    oreButton.Size = UDim2.new(1, 0, 0, 30)
+                    oreButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                    oreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    oreButton.TextSize = 16
+                    oreButton.Text = item.Name
+                    oreButton.TextWrapped = true
 
-                oreButton.MouseButton1Click:Connect(function()
-                    game.Players.LocalPlayer.Character:MoveTo(item.PrimaryPart.Position)
-                end)
+                    oreButton.MouseButton1Click:Connect(function()
+                        if item.PrimaryPart then
+                            game.Players.LocalPlayer.Character:MoveTo(item.PrimaryPart.Position)
+                        end
+                    end)
+                end
             end
         end
     else
@@ -59,8 +91,30 @@ end
 -- Update the display immediately
 updateOresDisplay()
 
--- Optionally, set up a loop to update every few seconds
-while true do
-    wait(3)
-    updateOresDisplay()
-end
+-- Auto Teleport Logic
+spawn(function()
+    while true do
+        wait(3)
+        updateOresDisplay()
+
+        if autoTeleportEnabled then
+            local oresFolder = workspace:FindFirstChild("Ores")
+            if oresFolder then
+                local topOre = oresFolder:GetChildren()[1]
+                if topOre and topOre:IsA("Model") then
+                    if not topOre.PrimaryPart then
+                        for _, part in ipairs(topOre:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                topOre.PrimaryPart = part
+                                break
+                            end
+                        end
+                    end
+                    if topOre.PrimaryPart then
+                        game.Players.LocalPlayer.Character:MoveTo(topOre.PrimaryPart.Position)
+                    end
+                end
+            end
+        end
+    end
+end)
