@@ -1,0 +1,66 @@
+-- Create the ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "OreFinderGUI"
+screenGui.Parent = game:GetService("CoreGui") -- Moves GUI to CoreGui to prevent interference
+
+-- Create the scrolling frame to hold the clickable buttons (for multiple ores)
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Parent = screenGui
+scrollingFrame.Size = UDim2.new(0, 300, 0, 200)
+scrollingFrame.Position = UDim2.new(0.5, 500, 0.5, -100)
+scrollingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+scrollingFrame.ScrollBarThickness = 10
+
+-- Create the UIListLayout to arrange buttons vertically
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Parent = scrollingFrame
+uiListLayout.FillDirection = Enum.FillDirection.Vertical
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Padding = UDim.new(0, 5)
+
+-- Function to update the ScrollingFrame with buttons for each ore model
+local function updateOresDisplay()
+    for _, child in pairs(scrollingFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    local oresFolder = workspace:FindFirstChild("Ores")
+    if oresFolder then
+        for _, item in pairs(oresFolder:GetChildren()) do
+            if item:IsA("Model") then
+                local oreButton = Instance.new("TextButton")
+                oreButton.Parent = scrollingFrame
+                oreButton.Size = UDim2.new(1, 0, 0, 30)
+                oreButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                oreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                oreButton.TextSize = 16
+                oreButton.Text = item.Name
+                oreButton.TextWrapped = true
+
+                oreButton.MouseButton1Click:Connect(function()
+                    game.Players.LocalPlayer.Character:MoveTo(item.PrimaryPart.Position)
+                end)
+            end
+        end
+    else
+        local noOresButton = Instance.new("TextButton")
+        noOresButton.Parent = scrollingFrame
+        noOresButton.Size = UDim2.new(1, 0, 0, 30)
+        noOresButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        noOresButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        noOresButton.TextSize = 16
+        noOresButton.Text = "Ores folder not found!"
+        noOresButton.TextWrapped = true
+    end
+end
+
+-- Update the display immediately
+updateOresDisplay()
+
+-- Optionally, set up a loop to update every few seconds
+while true do
+    wait(3)
+    updateOresDisplay()
+end
