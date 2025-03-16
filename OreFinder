@@ -23,7 +23,7 @@ local toggleButton = Instance.new("TextButton")
 toggleButton.Parent = screenGui
 toggleButton.Size = UDim2.new(0, 300, 0, 30)
 toggleButton.Position = UDim2.new(0.5, 500, 0.5, -140)
-toggleButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.Text = "Auto Teleport: OFF"
 
@@ -94,7 +94,7 @@ updateOresDisplay()
 -- Auto Teleport Logic
 spawn(function()
     while true do
-        wait(3)
+        wait(5)
         updateOresDisplay()
 
         if autoTeleportEnabled then
@@ -114,6 +114,21 @@ spawn(function()
                         game.Players.LocalPlayer.Character:MoveTo(topOre.PrimaryPart.Position)
                     end
                 end
+            end
+        end
+    end
+end)
+
+-- Loop to check the ores list every 10 seconds until there is something in the list
+spawn(function()
+    while true do
+        wait(10) -- Wait for 10 seconds
+        local oresFolder = workspace:FindFirstChild("Ores")
+        if oresFolder then
+            local ores = oresFolder:GetChildren()
+            if #ores == 0 then
+                -- If no ores are found, trigger the RefreshRequest
+                game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RefreshRequest"):FireServer()
             end
         end
     end
